@@ -14,16 +14,18 @@
 <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
 <style>
 * { margin: 0; padding: 0; box-sizing: border-box; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif; background: #f5f7fa; color: #1a1a1a; font-size: 14px; line-height: 1.5; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif; background: #eef2f7; color: #1a1a1a; font-size: 14px; line-height: 1.5; }
 
 /* 顶部导航 */
 .header {
-  background: linear-gradient(135deg, #1a365d 0%, #2c5282 100%);
-  padding: 16px 24px;
+  background: linear-gradient(135deg, #1a365d 0%, #2b6cb0 60%, #3182ce 100%);
+  padding: 18px 28px;
   display: flex; justify-content: space-between; align-items: center;
   flex-wrap: wrap; gap: 12px;
+  box-shadow: 0 4px 16px rgba(26,54,93,0.3);
 }
-.header h1 { font-size: 20px; font-weight: 600; color: #fff; letter-spacing: 0.5px; }
+.header h1 { font-size: 20px; font-weight: 700; color: #fff; letter-spacing: 1px; display: flex; align-items: center; gap: 10px; }
+.header h1::before { content: '📊'; font-size: 18px; }
 .header-actions { display: flex; gap: 10px; }
 
 /* 按钮 */
@@ -43,116 +45,185 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC'
 
 /* 月份选择器 */
 .month-bar {
-  background: #fff;
-  padding: 12px 24px;
+  background: linear-gradient(to right, #f8faff, #fff);
+  padding: 14px 24px;
   border-bottom: 1px solid #e2e8f0;
-  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  box-shadow: 0 2px 8px rgba(44,82,130,0.05);
 }
-.month-bar .label { font-size: 14px; color: #4a5568; font-weight: 500; }
+.month-bar .label {
+  font-size: 12px; color: #718096; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.8px;
+  display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+}
+.month-bar .label::before { content: ''; width: 3px; height: 12px; background: #2c5282; border-radius: 2px; }
+#monthBtns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .month-btn {
-  padding: 6px 16px; border-radius: 6px; font-size: 13px; cursor: pointer;
-  border: 1px solid #e2e8f0; background: #fff; color: #4a5568;
-  font-family: inherit; transition: all .2s; display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 18px; border-radius: 20px; font-size: 13px; cursor: grab;
+  border: 1.5px solid #e2e8f0; background: #fff; color: #4a5568;
+  font-family: inherit; transition: all .2s;
+  user-select: none; display: inline-flex; align-items: center; gap: 5px;
+  font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
-.month-btn:hover { border-color: #3182ce; color: #3182ce; background: #ebf8ff; }
-.month-btn.active { background: #2c5282; border-color: #2c5282; color: #fff; }
-.month-btn .drag-handle { cursor: grab; opacity: 0.4; font-size: 11px; }
-.month-btn:hover .drag-handle { opacity: 1; }
-.month-btn.dragging { opacity: 0.5; border-style: dashed; }
-.month-btn.drag-over { border-color: #3182ce; background: #ebf8ff; }
+.month-btn:hover { border-color: #3182ce; color: #3182ce; background: #ebf8ff; box-shadow: 0 2px 8px rgba(49,130,206,0.15); transform: translateY(-1px); }
+.month-btn.active { background: linear-gradient(135deg, #2c5282, #3182ce); border-color: transparent; color: #fff; box-shadow: 0 3px 10px rgba(44,82,130,0.3); }
+.month-btn.active:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(44,82,130,0.35); }
+.month-btn .drag-handle { font-size: 11px; opacity: 0.4; cursor: grab; }
+.month-btn:hover .drag-handle { opacity: 0.8; }
+.month-btn.dragging { opacity: 0.45; transform: scale(0.95); cursor: grabbing; border-style: dashed; }
+.month-btn.drag-over { border-color: #3182ce; background: #ebf8ff; transform: scale(1.05); }
 
 /* 主内容 */
-.main { padding: 20px; max-width: 1400px; margin: 0 auto; }
+.main { padding: 24px; max-width: 1400px; margin: 0 auto; }
+
+/* 分区标题 */
+.section-title {
+  font-size: 13px; color: #718096; font-weight: 600; margin-bottom: 14px;
+  text-transform: uppercase; letter-spacing: 0.8px;
+  display: flex; align-items: center; gap: 8px;
+}
+.section-title::before { content: ''; width: 3px; height: 13px; border-radius: 2px; }
+.section-title.blue::before { background: linear-gradient(180deg, #3182ce, #2c5282); }
+.section-title.orange::before { background: linear-gradient(180deg, #ed8936, #dd6b20); }
+.section-title.green::before { background: linear-gradient(180deg, #48bb78, #38a169); }
+.section-title.purple::before { background: linear-gradient(180deg, #9f7aea, #805ad5); }
 
 /* KPI 核心指标 */
-.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
 .kpi-card {
   background: #fff;
-  border-radius: 8px; padding: 18px 20px;
-  border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  border-radius: 12px; padding: 20px 22px;
+  border: 1px solid #e8edf5;
+  box-shadow: 0 2px 12px rgba(44,82,130,0.07);
+  position: relative; overflow: hidden;
+  transition: transform .2s, box-shadow .2s;
 }
+.kpi-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(44,82,130,0.12); }
 .kpi-card::before {
-  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px;
-  border-radius: 8px 8px 0 0;
+  content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px;
+  border-radius: 12px 12px 0 0;
 }
-.kpi-card:nth-child(1)::before { background: #2c5282; }
-.kpi-card:nth-child(2)::before { background: #dd6b20; }
-.kpi-card:nth-child(3)::before { background: #38a169; }
-.kpi-card:nth-child(4)::before { background: #805ad5; }
-.kpi-label { font-size: 12px; color: #718096; margin-bottom: 8px; font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
-.kpi-value { font-size: 28px; font-weight: 700; color: #1a202c; letter-spacing: -0.5px; }
-.kpi-unit { font-size: 14px; font-weight: 500; color: #718096; margin-left: 2px; }
-.kpi-sub { font-size: 12px; color: #a0aec0; margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px 10px; }
-.kpi-sub span { font-weight: 600; color: #4a5568; }
+.kpi-card::after {
+  content: ''; position: absolute; bottom: -20px; right: -20px;
+  width: 80px; height: 80px; border-radius: 50%;
+  opacity: 0.04;
+}
+.kpi-card:nth-child(1)::before { background: linear-gradient(90deg, #2c5282, #4299e1); }
+.kpi-card:nth-child(1)::after { background: #2c5282; }
+.kpi-card:nth-child(2)::before { background: linear-gradient(90deg, #dd6b20, #f6ad55); }
+.kpi-card:nth-child(2)::after { background: #dd6b20; }
+.kpi-card:nth-child(3)::before { background: linear-gradient(90deg, #38a169, #68d391); }
+.kpi-card:nth-child(3)::after { background: #38a169; }
+.kpi-card:nth-child(4)::before { background: linear-gradient(90deg, #805ad5, #b794f4); }
+.kpi-card:nth-child(4)::after { background: #805ad5; }
+.kpi-label { font-size: 11px; color: #a0aec0; margin-bottom: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; }
+.kpi-value { font-size: 30px; font-weight: 800; color: #1a202c; letter-spacing: -1px; line-height: 1; margin-bottom: 10px; }
+.kpi-unit { font-size: 14px; font-weight: 600; color: #718096; margin-left: 2px; }
+.kpi-sub { font-size: 12px; color: #a0aec0; display: flex; flex-wrap: wrap; gap: 4px 12px; padding-top: 10px; border-top: 1px solid #f0f4f8; }
+.kpi-sub span { font-weight: 700; color: #4a5568; }
 
 /* 业态卡片 */
-.biz-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
+.biz-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
 .biz-card {
-  background: #fff; border-radius: 8px; padding: 18px;
-  border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  background: #fff; border-radius: 12px; padding: 20px;
+  border: 1px solid #e8edf5; box-shadow: 0 2px 12px rgba(44,82,130,0.07);
+  transition: transform .2s, box-shadow .2s;
 }
-.biz-header { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; padding-bottom: 12px; border-bottom: 1px solid #f0f0f0; }
-.biz-icon { width: 36px; height: 36px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; }
-.biz-icon.billiard { background: #f0fff4; color: #276749; }
-.biz-icon.ktv { background: #fffaf0; color: #c05621; }
-.biz-icon.chess { background: #faf5ff; color: #6b46c1; }
-.biz-name { font-size: 15px; font-weight: 600; }
-.biz-revenue { font-size: 22px; font-weight: 700; color: #1a202c; margin-bottom: 12px; }
-.biz-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 13px; border-bottom: 1px dashed #f5f5f5; }
+.biz-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(44,82,130,0.12); }
+.biz-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 2px solid #f5f7fa; }
+.biz-icon { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 800; box-shadow: 0 3px 8px rgba(0,0,0,0.1); }
+.biz-icon.billiard { background: linear-gradient(135deg, #c6f6d5, #9ae6b4); color: #276749; }
+.biz-icon.ktv { background: linear-gradient(135deg, #feebc8, #fbd38d); color: #c05621; }
+.biz-icon.chess { background: linear-gradient(135deg, #e9d8fd, #d6bcfa); color: #6b46c1; }
+.biz-name { font-size: 16px; font-weight: 700; color: #2d3748; }
+.biz-revenue { font-size: 24px; font-weight: 800; color: #1a202c; margin-bottom: 14px; letter-spacing: -0.5px; }
+.biz-row { display: flex; justify-content: space-between; padding: 7px 0; font-size: 13px; border-bottom: 1px solid #f5f7fa; }
 .biz-row:last-child { border-bottom: none; }
-.biz-row .key { color: #718096; }
-.biz-row .val { font-weight: 600; color: #2d3748; }
+.biz-row .key { color: #a0aec0; }
+.biz-row .val { font-weight: 700; color: #2d3748; }
 
-/* 图表区域 - 2x2布局 */
-.chart-section { margin-bottom: 20px; }
-.chart-section h2 { font-size: 15px; color: #2d3748; margin-bottom: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
-.chart-section h2::before { content: ''; width: 3px; height: 14px; background: #2c5282; border-radius: 2px; }
+/* 图表区域 */
+.chart-section { margin-bottom: 24px; }
 .chart-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
 .chart-card {
-  background: #fff; border-radius: 8px; padding: 16px;
-  border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  background: #fff; border-radius: 12px; padding: 18px 20px;
+  border: 1px solid #e8edf5; box-shadow: 0 2px 12px rgba(44,82,130,0.07);
+  transition: box-shadow .2s;
 }
-.chart-card h3 { font-size: 13px; color: #4a5568; margin-bottom: 12px; font-weight: 600; }
+.chart-card:hover { box-shadow: 0 4px 16px rgba(44,82,130,0.12); }
+.chart-card h3 {
+  font-size: 12px; color: #718096; margin-bottom: 14px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.6px;
+  display: flex; align-items: center; gap: 6px;
+}
+.chart-card h3::before { content: ''; width: 2px; height: 12px; border-radius: 2px; background: #cbd5e0; }
 .chart-card canvas { max-height: 180px; }
 
-/* 渠道明细 - 紧凑版 */
-.channel-section { background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 20px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-.channel-section h3 { font-size: 13px; color: #4a5568; margin-bottom: 14px; font-weight: 600; }
-.channel-bars { display: flex; flex-direction: column; gap: 10px; }
-.ch-row { display: flex; align-items: center; gap: 10px; font-size: 13px; }
-.ch-label { width: 50px; color: #718096; text-align: right; flex-shrink: 0; font-weight: 500; }
-.ch-track { flex: 1; background: #f7fafc; border-radius: 4px; height: 20px; overflow: hidden; }
-.ch-fill { height: 100%; border-radius: 4px; transition: width .4s; display: flex; align-items: center; padding-left: 8px; font-size: 11px; color: #fff; font-weight: 600; }
-.ch-val { width: 90px; color: #2d3748; font-weight: 700; font-size: 13px; flex-shrink: 0; text-align: right; }
+/* 渠道明细 */
+.channel-section {
+  background: #fff; border-radius: 12px; padding: 20px 22px;
+  margin-bottom: 24px; border: 1px solid #e8edf5;
+  box-shadow: 0 2px 12px rgba(44,82,130,0.07);
+}
+.channel-section h3 {
+  font-size: 12px; color: #718096; margin-bottom: 18px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: 0.6px;
+}
+.channel-bars { display: flex; flex-direction: column; gap: 12px; }
+.ch-row { display: flex; align-items: center; gap: 12px; font-size: 13px; }
+.ch-label { width: 52px; color: #718096; text-align: right; flex-shrink: 0; font-weight: 600; }
+.ch-track { flex: 1; background: #f1f5f9; border-radius: 6px; height: 22px; overflow: hidden; }
+.ch-fill { height: 100%; border-radius: 6px; transition: width .5s cubic-bezier(.4,0,.2,1); display: flex; align-items: center; padding-left: 10px; font-size: 11px; color: rgba(255,255,255,0.9); font-weight: 700; }
+.ch-val { width: 100px; color: #2d3748; font-weight: 700; font-size: 13px; flex-shrink: 0; text-align: right; }
 .ch-pct { font-size: 11px; color: #a0aec0; margin-left: 4px; }
 
 /* 数据表格 */
-.table-section { background: #fff; border-radius: 8px; overflow: hidden; margin-bottom: 20px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-.table-header { padding: 14px 18px; background: #f7fafc; border-bottom: 1px solid #e2e8f0; display: flex; justify-content: space-between; align-items: center; }
-.table-header h3 { font-size: 14px; font-weight: 600; color: #2d3748; }
+.table-section {
+  background: #fff; border-radius: 12px; overflow: hidden;
+  margin-bottom: 24px; border: 1px solid #e8edf5;
+  box-shadow: 0 2px 12px rgba(44,82,130,0.07);
+}
+.table-header {
+  padding: 16px 22px; background: linear-gradient(to right, #f8faff, #f0f4ff);
+  border-bottom: 1px solid #e8edf5;
+  display: flex; justify-content: space-between; align-items: center;
+}
+.table-header h3 { font-size: 12px; font-weight: 700; color: #2d3748; text-transform: uppercase; letter-spacing: 0.6px; }
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
-th { background: #f7fafc; color: #4a5568; padding: 12px 14px; text-align: left; font-weight: 600; border-bottom: 2px solid #e2e8f0; font-size: 12px; text-transform: uppercase; letter-spacing: 0.3px; }
-td { padding: 12px 14px; border-bottom: 1px solid #f0f0f0; }
+th {
+  background: #f8faff; color: #718096; padding: 11px 14px;
+  text-align: left; font-weight: 700; border-bottom: 1px solid #e8edf5;
+  font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px;
+}
+td { padding: 13px 14px; border-bottom: 1px solid #f5f7fa; color: #2d3748; }
 tr:last-child td { border-bottom: none; }
-tr:hover td { background: #f7fafc; }
+tr:hover td { background: #f8faff; }
 .num { text-align: right; }
-.tag { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
-.tag-billiard { background: #f0fff4; color: #276749; }
-.tag-ktv { background: #fffaf0; color: #c05621; }
-.tag-chess { background: #faf5ff; color: #6b46c1; }
+.tag { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.tag-billiard { background: #f0fff4; color: #276749; border: 1px solid #c6f6d5; }
+.tag-ktv { background: #fffaf0; color: #c05621; border: 1px solid #feebc8; }
+.tag-chess { background: #faf5ff; color: #6b46c1; border: 1px solid #e9d8fd; }
 
 /* 趋势对比 */
-.trend-section { background: #fff; border-radius: 8px; padding: 16px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
-.trend-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px; }
-.trend-header h3 { font-size: 14px; font-weight: 600; color: #2d3748; display: flex; align-items: center; gap: 8px; }
-.trend-header h3::before { content: ''; width: 3px; height: 14px; background: #805ad5; border-radius: 2px; }
+.trend-section {
+  background: #fff; border-radius: 12px; padding: 20px 22px;
+  border: 1px solid #e8edf5; box-shadow: 0 2px 12px rgba(44,82,130,0.07);
+}
+.trend-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px; }
+.trend-header h3 { font-size: 12px; font-weight: 700; color: #2d3748; text-transform: uppercase; letter-spacing: 0.6px; display: flex; align-items: center; gap: 8px; }
+.trend-header h3::before { content: ''; width: 3px; height: 13px; background: linear-gradient(180deg, #9f7aea, #805ad5); border-radius: 2px; }
 .compare-chks { display: flex; gap: 6px; flex-wrap: wrap; }
 .compare-chk { display: inline-flex; gap: 3px; align-items: center; }
 .compare-chk input { width: 14px; height: 14px; cursor: pointer; accent-color: #2c5282; }
-.compare-chk label { font-size: 12px; color: #4a5568; cursor: pointer; padding: 3px 10px; border-radius: 4px; background: #f7fafc; transition: all .15s; border: 1px solid #e2e8f0; }
-.compare-chk input:checked + label { background: #2c5282; color: #fff; border-color: #2c5282; }
-.trend-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
+.compare-chk label {
+  font-size: 12px; color: #4a5568; cursor: pointer;
+  padding: 4px 12px; border-radius: 20px;
+  background: #f7fafc; transition: all .2s;
+  border: 1.5px solid #e2e8f0; font-weight: 500;
+}
+.compare-chk input:checked + label { background: linear-gradient(135deg, #2c5282, #3182ce); color: #fff; border-color: transparent; box-shadow: 0 2px 6px rgba(44,82,130,0.25); }
+.trend-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
 .trend-grid .chart-card canvas { max-height: 160px; }
 
 /* 模态框 */
@@ -195,21 +266,21 @@ tr:hover td { background: #f7fafc; }
   .btn { padding: 8px 12px; font-size: 12px; }
   
   .month-bar { padding: 10px 16px; }
-  .month-btn { padding: 6px 12px; font-size: 12px; }
+  .month-btn { padding: 5px 14px; font-size: 12px; }
   
   .main { padding: 14px; }
   
-  .kpi-grid { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .kpi-grid { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
   .kpi-card { padding: 14px 16px; }
-  .kpi-value { font-size: 22px; }
+  .kpi-value { font-size: 24px; }
   
-  .biz-grid { grid-template-columns: 1fr; gap: 12px; margin-bottom: 14px; }
+  .biz-grid { grid-template-columns: 1fr; gap: 12px; margin-bottom: 16px; }
   
-  .chart-grid, .trend-grid { grid-template-columns: 1fr; gap: 12px; margin-bottom: 14px; }
+  .chart-grid, .trend-grid { grid-template-columns: 1fr; gap: 12px; margin-bottom: 16px; }
   
-  .channel-section { padding: 14px; margin-bottom: 14px; }
+  .channel-section { padding: 14px; margin-bottom: 16px; }
   
-  .table-section { margin-bottom: 14px; }
+  .table-section { margin-bottom: 16px; }
   .form-row { grid-template-columns: 1fr 1fr; }
 }
 
@@ -224,12 +295,9 @@ tr:hover td { background: #f7fafc; }
 
 <!-- 顶部 -->
 <div class="header">
-  <h1>多欢聚数据管理</h1>
+  <h1>多欢聚月数据汇总</h1>
   <div class="header-actions">
     <button class="btn btn-primary" onclick="openAddModal()">添加月份</button>
-    <button class="btn btn-outline" onclick="exportData()">导出</button>
-    <button class="btn btn-outline" onclick="document.getElementById('importFile').click()">导入</button>
-    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(this)" />
   </div>
 </div>
 
@@ -249,7 +317,7 @@ tr:hover td { background: #f7fafc; }
 
   <!-- 图表区域 -->
   <div class="chart-section">
-    <h2>数据分析</h2>
+    <div class="section-title blue">数据分析</div>
     <div class="chart-grid">
       <div class="chart-card">
         <h3>收益渠道占比</h3>
@@ -280,7 +348,6 @@ tr:hover td { background: #f7fafc; }
   <div class="table-section">
     <div class="table-header">
       <h3>业态明细数据</h3>
-      <span class="hint">拖拽月份可调整顺序</span>
     </div>
     <div class="table-wrap">
       <table>
@@ -297,7 +364,6 @@ tr:hover td { background: #f7fafc; }
             <th class="num">新客</th>
             <th class="num">老客</th>
             <th class="num">复购率</th>
-            <th></th>
           </tr>
         </thead>
         <tbody id="tableBody"></tbody>
@@ -450,7 +516,7 @@ const initData = {
 function fmt(n) { return n.toLocaleString('zh-CN', {maximumFractionDigits:2}); }
 function fmtYuan(n) { return '¥' + n.toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2}); }
 
-// ===================== 导入导出 =====================
+// ===================== 导出（保留供内部使用）=====================
 function exportData() {
   const data = { allData, monthOrder };
   const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -460,34 +526,29 @@ function exportData() {
   a.click();
 }
 
-function importData(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = function(e) {
-    try {
-      const data = JSON.parse(e.target.result);
-      if (data.allData && data.monthOrder) {
-        allData = data.allData;
-        monthOrder = data.monthOrder;
-        curMonth = monthOrder[monthOrder.length - 1] || "";
-        selectedCompare = new Set(monthOrder.slice(-3));
-        rebuildMonthButtons();
-        rebuildCompareSelector();
-        render();
-        alert('导入成功！共 ' + monthOrder.length + ' 个月');
-      } else {
-        alert('数据格式错误');
-      }
-    } catch (err) {
-      alert('解析失败：' + err.message);
-    }
-  };
-  reader.readAsText(file);
-  input.value = '';
+// ===================== localStorage 持久化 =====================
+const STORAGE_KEY = 'duohuanju_data_v1';
+
+function saveToStorage() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ allData, monthOrder }));
+  } catch(e) { /* 存储失败时静默处理 */ }
 }
 
-// ===================== 月份按钮（拖拽） =====================
+function loadFromStorage() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (data.allData && data.monthOrder && data.monthOrder.length > 0) {
+        return data;
+      }
+    }
+  } catch(e) {}
+  return null;
+}
+
+// ===================== 月份按钮（支持拖拽排序） =====================
 function rebuildMonthButtons() {
   const container = document.getElementById('monthBtns');
   container.innerHTML = '';
@@ -497,18 +558,34 @@ function rebuildMonthButtons() {
     btn.className = 'month-btn' + (m === curMonth ? ' active' : '');
     btn.draggable = true;
     btn.dataset.month = m;
-    btn.innerHTML = `<span class="drag-handle">☰</span> ${m}`;
+    btn.dataset.idx = idx;
+    btn.innerHTML = `<span class="drag-handle">⠿</span>${m}`;
     
-    btn.onclick = () => {
+    // 点击切换月份
+    btn.onclick = (e) => {
+      if (e.target.classList.contains('drag-handle')) return;
       document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       curMonth = m;
       render();
     };
     
-    btn.ondragstart = (e) => { btn.classList.add('dragging'); e.dataTransfer.setData('text/plain', idx); };
-    btn.ondragend = () => btn.classList.remove('dragging');
-    btn.ondragover = (e) => { e.preventDefault(); btn.classList.add('drag-over'); };
+    // 拖拽事件
+    btn.ondragstart = (e) => {
+      btn.classList.add('dragging');
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(idx));
+    };
+    btn.ondragend = () => {
+      btn.classList.remove('dragging');
+      document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('drag-over'));
+    };
+    btn.ondragover = (e) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
+      document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('drag-over'));
+      btn.classList.add('drag-over');
+    };
     btn.ondragleave = () => btn.classList.remove('drag-over');
     btn.ondrop = (e) => {
       e.preventDefault();
@@ -518,11 +595,14 @@ function rebuildMonthButtons() {
       if (fromIdx !== toIdx) {
         const item = monthOrder.splice(fromIdx, 1)[0];
         monthOrder.splice(toIdx, 0, item);
+        saveToStorage();
         rebuildMonthButtons();
         rebuildCompareSelector();
+        renderTrendCharts();
       }
     };
     
+    // 右键菜单
     btn.oncontextmenu = (e) => {
       e.preventDefault();
       const action = prompt(`月份「${m}」：\n1. 重命名\n2. 删除\n\n输入数字：`);
@@ -645,10 +725,6 @@ function render() {
       <td class="num">${r.newC}</td>
       <td class="num">${r.oldC}</td>
       <td class="num">${r.rep.toFixed(1)}%</td>
-      <td>
-        <button class="btn btn-outline btn-sm" onclick="editBizData('${curMonth}', '${r.cat}')">编辑</button>
-        <button class="btn btn-danger btn-sm" onclick="deleteBizData('${curMonth}', '${r.cat}')">删除</button>
-      </td>
     </tr>
   `).join('');
 
@@ -875,6 +951,7 @@ function editMonthName(m) {
   selectedCompare.delete(m);
   selectedCompare.add(newName);
   
+  saveToStorage();
   rebuildMonthButtons();
   rebuildCompareSelector();
   render();
@@ -886,6 +963,7 @@ function deleteMonth(m) {
   monthOrder = monthOrder.filter(x => x !== m);
   selectedCompare.delete(m);
   curMonth = monthOrder[monthOrder.length - 1] || "";
+  saveToStorage();
   rebuildMonthButtons();
   rebuildCompareSelector();
   render();
@@ -994,6 +1072,7 @@ function saveMonthData() {
   curMonth = month;
   rebuildMonthButtons();
   rebuildCompareSelector();
+  saveToStorage();
   render();
   alert(editingMonth ? '已更新' : '已添加');
 }
@@ -1025,8 +1104,15 @@ function deleteBizData(month, biz) {
 
 // ===================== 初始化 =====================
 function init() {
-  allData = initData;
-  monthOrder = Object.keys(initData);
+  // 优先从localStorage读取，没有则用初始数据
+  const saved = loadFromStorage();
+  if (saved) {
+    allData = saved.allData;
+    monthOrder = saved.monthOrder;
+  } else {
+    allData = initData;
+    monthOrder = Object.keys(initData);
+  }
   curMonth = monthOrder[monthOrder.length - 1];
   selectedCompare = new Set(monthOrder.slice(-3));
   rebuildMonthButtons();
