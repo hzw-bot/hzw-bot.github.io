@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>多欢聚 · 数据管理</title>
+<meta name="description" content="多欢聚娱乐场所月度数据可视化，查看收益、频次、趋势等核心指标">
+<meta property="og:title" content="多欢聚月数据汇总">
+<meta property="og:description" content="多欢聚娱乐场所月度数据可视化看板，查看收益、频次、趋势等核心指标">
+<meta property="og:type" content="website">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js"></script>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif; background: #eef2f7; color: #1a1a1a; font-size: 14px; line-height: 1.5; }
+
+/* 顶部导航 */
+.header {
+  background: linear-gradient(135deg, #1a365d 0%, #2b6cb0 60%, #3182ce 100%);
+  padding: 18px 28px;
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: 12px;
+  box-shadow: 0 4px 16px rgba(26,54,93,0.3);
+}
+.header h1 { font-size: 20px; font-weight: 700; color: #fff; letter-spacing: 1px; display: flex; align-items: center; gap: 10px; }
+.header h1::before { content: '📊'; font-size: 18px; }
+.header-actions { display: flex; gap: 10px; }
+
+/* 按钮 */
+.btn { padding: 8px 16px; border-radius: 6px; font-size: 13px; cursor: pointer; border: none; font-family: inherit; transition: all .2s; font-weight: 500; }
+.btn-primary { background: rgba(255,255,255,0.15); color: #fff; border: 1px solid rgba(255,255,255,0.25); }
+.btn-primary:hover { background: rgba(255,255,255,0.25); }
+.btn-outline { background: #fff; color: #2c5282; border: 1px solid #cbd5e0; }
+.btn-outline:hover { background: #f7fafc; }
+.btn-danger { background: #fff; color: #c53030; border: 1px solid #feb2b2; }
+.btn-danger:hover { background: #fff5f5; }
+.btn-success { background: #38a169; color: #fff; }
+.btn-success:hover { background: #2f855a; }
+.btn-sm { padding: 5px 10px; font-size: 12px; border-radius: 4px; }
+.btn-icon { padding: 5px 8px; font-size: 12px; line-height: 1; }
+
+/* 月份选择器 */
+.month-bar {
+  background: linear-gradient(to right, #f8faff, #fff);
+  padding: 14px 24px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex; align-items: center; gap: 14px; flex-wrap: wrap;
+  box-shadow: 0 2px 8px rgba(44,82,130,0.05);
+}
+.month-bar .label { font-size: 12px; color: #718096; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+.month-bar .label::before { content: ''; width: 3px; height: 12px; background: #2c5282; border-radius: 2px; }
+#monthBtns { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.month-btn-wrap { position: relative; display: inline-flex; }
+.month-btn {
+  padding: 6px 18px; border-radius: 20px; font-size: 13px; cursor: pointer;
+  border: 1.5px solid #e2e8f0; background: #fff; color: #4a5568;
+  font-family: inherit; transition: all .2s;
+  user-select: none; display: inline-flex; align-items: center; gap: 5px;
+  font-weight: 500; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+}
+.month-btn:hover { border-color: #3182ce; color: #3182ce; background: #ebf8ff; box-shadow: 0 2px 8px rgba(49,130,206,0.15); transform: translateY(-1px); }
+.month-btn.active { background: linear-gradient(135deg, #2c5282, #3182ce); border-color: transparent; color: #fff; box-shadow: 0 3px 10px rgba(44,82,130,0.3); }
+.month-btn.active:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(44,82,130,0.35); }
+
+/* 月份按钮下拉菜单 */
+.month-btn-wrap:hover .month-menu {
+  display: block;
+}
+.month-menu {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-top: 4px;
+  background: #fff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 100;
+  min-width: 100px;
+  overflow: hidden;
+}
+.month-menu button {
+  display: block;
+  width: 100%;
+  padding: 8px 14px;
+  border: none;
+  background: none;
+  text-align: left;
+  font-size: 12px;
+  color: #4a5568;
+  cursor: pointer;
+  transition: background .15s;
+}
+.month-menu button:hover { background: #f7fafc; color: #2c5282; }
+.month-menu button.danger { color: #c53030; }
+.month-menu button.danger:hover { background: #fff5f5; }
+.month-menu hr { margin: 4px 0; border: none; border-top: 1px solid #e2e8f0; }
+
+/* 主内容 */
+.main { padding: 24px; max-width: 1400px; margin: 0 auto; }
+
+/* 分区标题 */
+.section-title { font-size: 13px; color: #718096; font-weight: 600; margin-bottom: 14px; text-transform: uppercase; letter-spacing: 0.8px; display: flex; align-items: center; gap: 8px; }
+.section-title::before { content: ''; width: 3px; height: 13px; border-radius: 2px; }
+.section-title.blue::before { background: linear-gradient(180deg, #3182ce, #2c5282); }
+.section-title.orange::before { background: linear-gradient(180deg, #ed8936, #dd6b20); }
+.section-title.green::before { background: linear-gradient(180deg, #48bb78, #38a169); }
+.section-title.purple::before { background: linear-gradient(180deg, #9f7aea, #805ad5); }
+
+/* KPI 核心指标 */
+.kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+.kpi-card { background: #fff; border-radius: 12px; padding: 20px 22px; border: 1px solid #e8edf5; box-shadow: 0 2px 12px rgba(44,82,130,0.07); position: relative; overflow: hidden; transition: transform .2s, box-shadow .2s; }
+.kpi-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(44,82,130,0.12); }
+.kpi-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; border-radius: 12px 12px 0 0; }
+.kpi-card::after { content: ''; position: absolute; bottom: -20px; right: -20px; width: 80px; height: 80px; border-radius: 50%; opacity: 0.04; }
+.kpi-card:nth-child(1)::before { background: linear-gradient(90deg, #2c5282, #4299e1); }
+.kpi-card:nth-child(1)::after { background: #2c5282; }
+.kpi-card:nth-child(2)::before { background: linear-gradient(90deg, #dd6b20, #f6ad55); }
+.kpi-card:nth-child(2)::after { background: #dd6b20; }
+.kpi-card:nth-child(3)::before { background: linear-gradient(90deg, #38a169, #68d391); }
+.kpi-card:nth-child(3)::after { background: #38a169; }
+.kpi-card:nth-child(4)::before { background: linear-gradient(90deg, #805ad5, #b794f4); }
+.kpi-card:nth-child(4)::after { background: #805ad5; }
+.kpi-label { font-size: 11px; color: #a0aec0; margin-bottom: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.8px; }
+.kpi-value { font-size: 30px; font-weight: 800; color: #1a202c; letter-spacing: -1px; line-height: 1; margin-bottom: 10px; }
+.kpi-unit { font-size: 14px; font-weight: 600; color: #718096; margin-left: 2px; }
+.kpi-sub { font-size: 12px; color: #a0aec0; display: flex; flex-wrap: wrap; gap: 4px 12px; padding-top: 10px; border-top: 1px solid #f0f4f8; }
+.kpi-sub span { font-weight: 700; color: #4a5568; }
+.kpi-change { display: inline-flex; align-items: center; gap: 3px; font-size: 12px; font-weight: 700; padding: 3px 8px; border-radius: 20px; margin-top: 6px; }
+.kpi-change.up { color: #c53030; background: #fff5f5; }
+.kpi-change.down { color: #276749; background: #f0fff4; }
+.kpi-change.flat { color: #718096; background: #f7fafc; }
+
+/* 业态卡片 */
+.biz-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
+.biz-card { background: #fff; border-radius: 12px; padding: 20px; border: 1px solid #e8edf5; box-shadow: 0 2px 12px rgba(44,82,130,0.07); transition: transform .2s, box-shadow .2s; }
+.biz-card:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(44,82,130,0.12); }
+.biz-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; padding-bottom: 14px; border-bottom: 2px solid #f5f7fa; }
+.biz-icon { width: 42px; height: 42px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 17px; font-weight: 800; box-shadow: 0 3px 8px rgba(0,0,0,0.1); }
+.biz-icon.billiard { background: linear-gradient(135deg, #c6f6d5, #9ae6b4); color: #276749; }
+.biz-icon.ktv { background: linear-gradient(135deg, #feebc8, #fbd38d); color: #c05621; }
+.biz-icon.chess { background: linear-gradient(135deg, #e9d8fd, #d6bcfa); color: #6b46c1; }
+.biz-name { font-size: 16px; font-weight: 700; color: #2d3748; display: flex; align-items: center; gap: 8px; }
+.biz-actions { display: flex; gap: 4px; margin-left: auto; }
+.biz-revenue { font-size: 24px; font-weight: 800; color: #1a202c; margin-bottom: 14px; letter-spacing: -0.5px; }
+.biz-row { display: flex; justify-content: space-between; padding: 7px 0; font-size: 13px; border-bottom: 1px solid #f5f7fa; }
+.biz-row:last-child { border-bottom: none; }
+.biz-row .key { color: #a0aec0; }
+.biz-row .val { font-weight: 700; color: #2d3748; }
+
+/* 图表区域 */
+.chart-section { margin-bottom: 24px; }
+.chart-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.chart-card { background: #fff; border-radius: 12px; padding: 18px 20px; border: 1px solid #e8edf5; box-shadow: 0 2px 12px rgba(44,82,130,0.07); transition: box-shadow .2s; }
+.chart-card:hover { box-shadow: 0 4px 16px rgba(44,82,130,0.12); }
+.chart-card h3 { font-size: 12px; color: #718096; margin-bottom: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; display: flex; align-items: center; gap: 6px; }
+.chart-card h3::before { content: ''; width: 2px; height: 12px; border-radius: 2px; background: #cbd5e0; }
+.chart-card canvas { max-height: 180px; }
+
+/* 渠道明细 */
+.channel-section { background: #fff; border-radius: 12px; padding: 20px 22px; margin-bottom: 24px; border: 1px solid #e8edf5; box-shadow: 0 2px 12px rgba(44,82,130,0.07); }
+.channel-section h3 { font-size: 12px; color: #718096; margin-bottom: 18px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.6px; }
+.channel-bars { display: flex; flex-direction: column; gap: 12px; }
+.ch-row { display: flex; align-items: center; gap: 12px; font-size: 13px; }
+.ch-label { width: 52px; color: #718096; text-align: right; flex-shrink: 0; font-weight: 600; }
+.ch-track { flex: 1; background: #f1f5f9; border-radius: 6px; height: 22px; overflow: hidden; }
+.ch-fill { height: 100%; border-radius: 6px; transition: width .5s cubic-bezier(.4,0,.2,1); display: flex; align-items: center; padding-left: 10px; font-size: 11px; color: rgba(255,255,255,0.9); font-weight: 700; }
+.ch-val { width: 100px; color: #2d3748; font-weight: 700; font-size: 13px; flex-shrink: 0; text-align: right; }
+.ch-pct { font-size: 11px; color: #a0aec0; margin-left: 4px; }
+
+/* 数据表格 */
+.table-section { background: #fff; border-radius: 12px; overflow: hidden; margin-bottom: 24px; border: 1px solid #e8edf5; box-shadow: 0 2px 12px rgba(44,82,130,0.07); }
+.table-header { padding: 16px 22px; background: linear-gradient(to right, #f8faff, #f0f4ff); border-bottom: 1px solid #e8edf5; display: flex; justify-content: space-between; align-items: center; }
+.table-header h3 { font-size: 12px; font-weight: 700; color: #2d3748; text-transform: uppercase; letter-spacing: 0.6px; }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+th { background: #f8faff; color: #718096; padding: 11px 14px; text-align: left; font-weight: 700; border-bottom: 1px solid #e8edf0; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
+td { padding: 13px 14px; border-bottom: 1px solid #f5f7fa; color: #2d3748; }
+tr:last-child td { border-bottom: none; }
+tr:hover td { background: #f8faff; }
+.num { text-align: right; }
+.tag { display: inline-flex; align-items: center; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; }
+.tag-billiard { background: #f0fff4; color: #276749; border: 1px solid #c6f6d5; }
+.tag-ktv { background: #fffaf0; color: #c05621; border: 1px solid #feebc8; }
+.tag-chess { background: #faf5ff; color: #6b46c1; border: 1px solid #e9d8fd; }
+.row-actions { display: flex; gap: 4px; justify-content: flex-end; }
+
+/* 趋势对比 */
+.trend-section { background: #fff; border-radius: 12px; padding: 20px 22px; border: 1px solid #e8edf5; box-shadow: 0 2px 12px rgba(44,82,130,0.07); }
+.trend-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; flex-wrap: wrap; gap: 12px; }
+.trend-header h3 { font-size: 12px; font-weight: 700; color: #2d3748; text-transform: uppercase; letter-spacing: 0.6px; display: flex; align-items: center; gap: 8px; }
+.trend-header h3::before { content: ''; width: 3px; height: 13px; background: linear-gradient(180deg, #9f7aea, #805ad5); border-radius: 2px; }
+.compare-chks { display: flex; gap: 6px; flex-wrap: wrap; }
+.compare-chk { display: inline-flex; gap: 3px; align-items: center; }
+.compare-chk input { width: 14px; height: 14px; cursor: pointer; accent-color: #2c5282; }
+.compare-chk label { font-size: 12px; color: #4a5568; cursor: pointer; padding: 4px 12px; border-radius: 20px; background: #f7fafc; transition: all .2s; border: 1.5px solid #e2e8f0; font-weight: 500; }
+.compare-chk input:checked + label { background: linear-gradient(135deg, #2c5282, #3182ce); color: #fff; border-color: transparent; box-shadow: 0 2px 6px rgba(44,82,130,0.25); }
+.trend-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.trend-grid .chart-card canvas { max-height: 160px; }
+
+/* 模态框 */
+.modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); z-index: 1000; align-items: center; justify-content: center; }
+.modal-overlay.show { display: flex; }
+.modal { background: #fff; border-radius: 12px; padding: 24px; max-width: 600px; width: 90%; max-height: 90vh; overflow-y: auto; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+.modal h2 { font-size: 16px; color: #1a202c; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 2px solid #f0f0f0; }
+.modal h3.biz-title { font-size: 14px; color: #2d3748; margin: 18px 0 12px; padding: 8px 12px; background: #f8faff; border-radius: 6px; border-left: 3px solid; }
+.modal h3.biz-title.tq { border-color: #276749; }
+.modal h3.biz-title.ktv { border-color: #dd6b20; }
+.modal h3.biz-title.qp { border-color: #6b46c1; }
+.modal .form-group { margin-bottom: 12px; }
+.modal .form-group label { display: block; font-size: 12px; color: #718096; margin-bottom: 5px; font-weight: 600; }
+.modal .form-group input, .modal .form-group select { width: 100%; padding: 9px 12px; border: 1px solid #e2e8f0; border-radius: 6px; font-size: 13px; font-family: inherit; transition: border-color .2s; }
+.modal .form-group input:focus, .modal .form-group select:focus { outline: none; border-color: #3182ce; box-shadow: 0 0 0 3px rgba(49,130,206,0.1); }
+.modal .form-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+.modal .form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; padding-top: 16px; border-top: 1px solid #f0f0f0; }
+
+/* 提示 */
+.hint { font-size: 12px; color: #718096; }
+.success-toast { position: fixed; bottom: 20px; right: 20px; background: #38a169; color: #fff; padding: 12px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; box-shadow: 0 4px 12px rgba(0,0,0,0.2); z-index: 2000; animation: slideIn .3s ease; }
+@keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+/* 响应式 - 平板 */
+@media (max-width: 1024px) { 
+  .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+  .chart-grid { grid-template-columns: 1fr 1fr; }
+  .trend-grid { grid-template-columns: 1fr 1fr; }
+}
+
+/* 响应式 - 手机 */
+@media (max-width: 768px) {
+  .header { padding: 12px 16px; }
+  .header h1 { font-size: 18px; }
+  .header-actions { width: 100%; justify-content: center; }
+  .btn { padding: 8px 12px; font-size: 12px; }
+  .month-bar { padding: 10px 16px; }
+  .month-btn { padding: 5px 14px; font-size: 12px; }
+  .main { padding: 14px; }
+  .kpi-grid { grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .kpi-card { padding: 14px 16px; }
+  .kpi-value { font-size: 24px; }
+  .biz-grid { grid-template-columns: 1fr; gap: 12px; margin-bottom: 16px; }
+  .chart-grid, .trend-grid { grid-template-columns: 1fr; gap: 12px; margin-bottom: 16px; }
+  .channel-section { padding: 14px; margin-bottom: 16px; }
+  .table-section { margin-bottom: 16px; }
+  .form-row { grid-template-columns: 1fr 1fr; }
+}
+
+/* 极小屏幕 */
+@media (max-width: 480px) {
+  .kpi-grid { grid-template-columns: 1fr; }
+  .header h1 { font-size: 16px; }
+}
+</style>
+</head>
+<body>
+
+<!-- 顶部 -->
+<div class="header">
+  <h1>多欢聚月数据汇总</h1>
+  <div class="header-actions">
+    <button class="btn btn-primary" onclick="showAddMonthModal()">+ 添加月份</button>
+  </div>
+</div>
+
+<!-- 月份选择 -->
+<div class="month-bar">
+  <span class="label">查看月份</span>
+  <div id="monthBtns"></div>
+</div>
+
+<!-- 主内容 -->
+<div class="main">
+  <!-- KPI 核心指标 -->
+  <div class="kpi-grid" id="kpiRow"></div>
+
+  <!-- 业态卡片 -->
+  <div class="biz-grid" id="bizCards"></div>
+
+  <!-- 图表区域 -->
+  <div class="chart-section">
+    <div class="section-title blue">数据分析</div>
+    <div class="chart-grid">
+      <div class="chart-card">
+        <h3>收益渠道占比</h3>
+        <canvas id="channelPie" height="180"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>业态收益占比</h3>
+        <canvas id="bizPie" height="180"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>使用频次对比</h3>
+        <canvas id="freqChart" height="180"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>新客/老客分布</h3>
+        <canvas id="newOldChart" height="180"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- 渠道明细 -->
+  <div class="channel-section">
+    <h3>支付渠道明细</h3>
+    <div class="channel-bars" id="channelBars"></div>
+  </div>
+
+  <!-- 数据表格 -->
+  <div class="table-section">
+    <div class="table-header">
+      <h3>业态明细数据</h3>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>业态</th>
+            <th class="num">频次</th>
+            <th class="num">均价</th>
+            <th class="num">收益</th>
+            <th class="num">微信</th>
+            <th class="num">美团</th>
+            <th class="num">抖音</th>
+            <th class="num">人数</th>
+            <th class="num">新客</th>
+            <th class="num">老客</th>
+            <th class="num">复购率</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 趋势对比 -->
+  <div class="trend-section">
+    <div class="trend-header">
+      <h3>月度趋势对比</h3>
+      <div class="compare-chks" id="compareSelector"></div>
+    </div>
+    <div class="trend-grid">
+      <div class="chart-card">
+        <h3>收益趋势</h3>
+        <canvas id="trendRevChart" height="160"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>支付人数趋势</h3>
+        <canvas id="trendPayChart" height="160"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>使用频次</h3>
+        <canvas id="trendFreqChart" height="160"></canvas>
+      </div>
+      <div class="chart-card">
+        <h3>复购率趋势</h3>
+        <canvas id="trendRepChart" height="160"></canvas>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 添加月份模态框 -->
+<div class="modal-overlay" id="addMonthModal">
+  <div class="modal">
+    <h2>添加新月份</h2>
+    <div class="form-group">
+      <label>月份名称</label>
+      <input type="text" id="newMonthName" placeholder="如：4月">
+    </div>
+
+    <!-- 台球数据 -->
+    <h3 class="biz-title tq">台球</h3>
+    <div class="form-row">
+      <div class="form-group">
+        <label>使用频次</label>
+        <input type="number" id="addTqFreq" min="0" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>微信支付</label>
+        <input type="number" id="addTqWechat" min="0" step="0.01" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>美团支付</label>
+        <input type="number" id="addTqMeituan" min="0" step="0.01" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>抖音支付</label>
+        <input type="number" id="addTqDouyin" min="0" step="0.01" placeholder="0">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>其他支付</label>
+        <input type="number" id="addTqOther" min="0" step="0.01" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>小程序人数</label>
+        <input type="number" id="addTqApp" min="0" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>美团人数</label>
+        <input type="number" id="addTqMt" min="0" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>抖音人数</label>
+        <input type="number" id="addTqDy" min="0" placeholder="0">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>新客数</label>
+      <input type="number" id="addTqNewC" min="0" placeholder="0" style="max-width:200px">
+    </div>
+
+    <!-- KTV数据 -->
+    <h3 class="biz-title ktv">KTV</h3>
+    <div class="form-row">
+      <div class="form-group">
+        <label>使用频次</label>
+        <input type="number" id="addKtvFreq" min="0" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>微信支付</label>
+        <input type="number" id="addKtvWechat" min="0" step="0.01" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>美团支付</label>
+        <input type="number" id="addKtvMeituan" min="0" step="0.01" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>抖音支付</label>
+        <input type="number" id="addKtvDouyin" min="0" step="0.01" placeholder="0">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>其他支付</label>
+        <input type="number" id="addKtvOther" min="0" step="0.01" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>小程序人数</label>
+        <input type="number" id="addKtvApp" min="0" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>美团人数</label>
+        <input type="number" id="addKtvMt" min="0" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>抖音人数</label>
+        <input type="number" id="addKtvDy" min="0" placeholder="0">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>新客数</label>
+      <input type="number" id="addKtvNewC" min="0" placeholder="0" style="max-width:200px">
+    </div>
+
+    <!-- 棋牌数据 -->
+    <h3 class="biz-title qp">棋牌</h3>
+    <div class="form-row">
+      <div class="form-group">
+        <label>使用频次</label>
+        <input type="number" id="addQpFreq" min="0" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>微信支付</label>
+        <input type="number" id="addQpWechat" min="0" step="0.01" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>美团支付</label>
+        <input type="number" id="addQpMeituan" min="0" step="0.01" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>抖音支付</label>
+        <input type="number" id="addQpDouyin" min="0" step="0.01" placeholder="0">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>其他支付</label>
+        <input type="number" id="addQpOther" min="0" step="0.01" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>小程序人数</label>
+        <input type="number" id="addQpApp" min="0" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>美团人数</label>
+        <input type="number" id="addQpMt" min="0" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label>抖音人数</label>
+        <input type="number" id="addQpDy" min="0" placeholder="0">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>新客数</label>
+      <input type="number" id="addQpNewC" min="0" placeholder="0" style="max-width:200px">
+    </div>
+
+    <div class="form-actions">
+      <button class="btn btn-outline" onclick="closeModal('addMonthModal')">取消</button>
+      <button class="btn btn-success" onclick="addMonth()">添加</button>
+    </div>
+  </div>
+</div>
+
+<!-- 编辑业态模态框 -->
+<div class="modal-overlay" id="editBizModal">
+  <div class="modal">
+    <h2>编辑业态数据</h2>
+    <input type="hidden" id="editBizMonth">
+    <input type="hidden" id="editBizCat">
+    <div class="form-group">
+      <label>业态类型</label>
+      <input type="text" id="editBizCatName" disabled>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>使用频次</label>
+        <input type="number" id="editFreq" min="0">
+      </div>
+      <div class="form-group">
+        <label>人均单价</label>
+        <input type="number" id="editPrice" min="0" step="0.01">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>微信支付</label>
+        <input type="number" id="editWechat" min="0" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>美团支付</label>
+        <input type="number" id="editMeituan" min="0" step="0.01">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>抖音支付</label>
+        <input type="number" id="editDouyin" min="0" step="0.01">
+      </div>
+      <div class="form-group">
+        <label>其他支付</label>
+        <input type="number" id="editOther" min="0" step="0.01">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>小程序人数</label>
+        <input type="number" id="editApp" min="0">
+      </div>
+      <div class="form-group">
+        <label>美团人数</label>
+        <input type="number" id="editMt" min="0">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>抖音人数</label>
+        <input type="number" id="editDy" min="0">
+      </div>
+      <div class="form-group">
+        <label>新客数</label>
+        <input type="number" id="editNewC" min="0">
+      </div>
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-outline" onclick="closeModal('editBizModal')">取消</button>
+      <button class="btn btn-success" onclick="saveBizEdit()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 重命名月份模态框 -->
+<div class="modal-overlay" id="renameMonthModal">
+  <div class="modal">
+    <h2>重命名月份</h2>
+    <input type="hidden" id="renameMonthOld">
+    <div class="form-group">
+      <label>新名称</label>
+      <input type="text" id="renameMonthNew" placeholder="如：4月">
+    </div>
+    <div class="form-actions">
+      <button class="btn btn-outline" onclick="closeModal('renameMonthModal')">取消</button>
+      <button class="btn btn-success" onclick="saveMonthRename()">保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- 隐藏的文件输入 -->
+<input type="file" id="importFile" accept=".json" style="display:none" onchange="handleImport(event)">
+
+<script>
+// ===================== 内嵌数据 =====================
+const defaultData = {
+  "months": ["7月", "8月", "9月", "10月", "11月", "12月", "1月", "2月", "3月", "4月"],
+  "data": {
+    "7月": {
+      "rows": [
+        { "cat": "台球", "freq": 490, "price": 19.52, "revenue": 9564.85, "wechat": 4169.2, "other": 0, "meituan": 3863.15, "douyin": 1532.5, "totalPay": 382, "app": 111, "mt": 179, "dy": 92, "newC": 382, "oldC": 0, "rep": 0 },
+        { "cat": "KTV", "freq": 227, "price": 107.08, "revenue": 24306.45, "wechat": 8218.45, "other": 488, "meituan": 15600, "douyin": 0, "totalPay": 209, "app": 118, "mt": 91, "dy": 0, "newC": 209, "oldC": 0, "rep": 0 },
+        { "cat": "棋牌", "freq": 110, "price": 70.75, "revenue": 7783, "wechat": 5390, "other": 68, "meituan": 2325, "douyin": 0, "totalPay": 74, "app": 45, "mt": 29, "dy": 0, "newC": 74, "oldC": 0, "rep": 0 }
+      ],
+      "total": { "freq": 827, "price": 50.37, "revenue": 41654.3, "wechat": 17777.65, "other": 556, "meituan": 21788.15, "douyin": 1532.5, "totalPay": 665, "app": 274, "mt": 299, "dy": 92, "newC": 665, "oldC": 0, "rep": 0 }
+    },
+    "8月": {
+      "rows": [
+        { "cat": "台球", "freq": 562, "price": 14.96, "revenue": 8407.6, "wechat": 2295, "other": 120, "meituan": 3708.9, "douyin": 2283.7, "totalPay": 487, "app": 70, "mt": 255, "dy": 162, "newC": 460, "oldC": 27, "rep": 5.54 },
+        { "cat": "KTV", "freq": 329, "price": 98.68, "revenue": 32466.5, "wechat": 14063.5, "other": 603, "meituan": 17800, "douyin": 0, "totalPay": 277, "app": 121, "mt": 156, "dy": 0, "newC": 269, "oldC": 8, "rep": 2.89 },
+        { "cat": "棋牌", "freq": 99, "price": 68.63, "revenue": 6794.64, "wechat": 3974.64, "other": 288, "meituan": 2364, "douyin": 168, "totalPay": 55, "app": 32, "mt": 19, "dy": 4, "newC": 38, "oldC": 17, "rep": 30.91 }
+      ],
+      "total": { "freq": 990, "price": 48.15, "revenue": 47668.74, "wechat": 20333.14, "other": 1011, "meituan": 23872.9, "douyin": 2451.7, "totalPay": 819, "app": 223, "mt": 430, "dy": 166, "newC": 767, "oldC": 52, "rep": 6.35 }
+    },
+    "9月": {
+      "rows": [
+        { "cat": "台球", "freq": 89, "price": 33.34, "revenue": 2967.18, "wechat": 1010.88, "other": 0, "meituan": 1405.4, "douyin": 550.9, "totalPay": 105, "app": 20, "mt": 45, "dy": 40, "newC": 94, "oldC": 11, "rep": 10.48 },
+        { "cat": "KTV", "freq": 355, "price": 81.84, "revenue": 29054.97, "wechat": 11418.97, "other": 0, "meituan": 17636, "douyin": 0, "totalPay": 291, "app": 101, "mt": 190, "dy": 0, "newC": 245, "oldC": 46, "rep": 15.81 },
+        { "cat": "棋牌", "freq": 104, "price": 64.6, "revenue": 6718, "wechat": 3878, "other": 659, "meituan": 1384, "douyin": 797, "totalPay": 76, "app": 40, "mt": 13, "dy": 23, "newC": 53, "oldC": 23, "rep": 30.26 }
+      ],
+      "total": { "freq": 548, "price": 70.69, "revenue": 38740.15, "wechat": 16307.85, "other": 659, "meituan": 20425.4, "douyin": 1347.9, "totalPay": 472, "app": 161, "mt": 248, "dy": 63, "newC": 392, "oldC": 80, "rep": 16.95 }
+    },
+    "10月": {
+      "rows": [
+        { "cat": "台球", "freq": 197, "price": 17.81, "revenue": 3509.4, "wechat": 1320, "other": 0, "meituan": 1213.6, "douyin": 975.8, "totalPay": 169, "app": 44, "mt": 81, "dy": 44, "newC": 146, "oldC": 23, "rep": 15.75 },
+        { "cat": "KTV", "freq": 406, "price": 106.42, "revenue": 43206.68, "wechat": 16418.18, "other": 228, "meituan": 26560.5, "douyin": 0, "totalPay": 348, "app": 128, "mt": 220, "dy": 0, "newC": 290, "oldC": 58, "rep": 16.67 },
+        { "cat": "棋牌", "freq": 71, "price": 65.3, "revenue": 4636.64, "wechat": 1752, "other": 847.64, "meituan": 1078, "douyin": 959, "totalPay": 55, "app": 29, "mt": 11, "dy": 15, "newC": 37, "oldC": 18, "rep": 32.73 }
+      ],
+      "total": { "freq": 674, "price": 76.19, "revenue": 51352.72, "wechat": 19490.18, "other": 1075.64, "meituan": 28852.1, "douyin": 1934.8, "totalPay": 572, "app": 201, "mt": 312, "dy": 59, "newC": 473, "oldC": 99, "rep": 17.31 }
+    },
+    "11月": {
+      "rows": [
+        { "cat": "台球", "freq": 179, "price": 15.84, "revenue": 2834.9, "wechat": 1334.9, "other": 0, "meituan": 1186.9, "douyin": 313.1, "totalPay": 154, "app": 54, "mt": 81, "dy": 19, "newC": 131, "oldC": 23, "rep": 17.56 },
+        { "cat": "KTV", "freq": 456, "price": 98.54, "revenue": 44933.1, "wechat": 19527.9, "other": 314, "meituan": 22409.2, "douyin": 2682, "totalPay": 438, "app": 167, "mt": 241, "dy": 30, "newC": 378, "oldC": 60, "rep": 13.7 },
+        { "cat": "棋牌", "freq": 102, "price": 61.72, "revenue": 6295, "wechat": 4250, "other": 580, "meituan": 952, "douyin": 513, "totalPay": 61, "app": 38, "mt": 14, "dy": 9, "newC": 39, "oldC": 22, "rep": 36.07 }
+      ],
+      "total": { "freq": 737, "price": 73.36, "revenue": 54063, "wechat": 25112.3, "other": 894, "meituan": 24548.1, "douyin": 3508.1, "totalPay": 653, "app": 259, "mt": 336, "dy": 58, "newC": 548, "oldC": 105, "rep": 16.08 }
+    },
+    "12月": {
+      "rows": [
+        { "cat": "台球", "freq": 185, "price": 14.76, "revenue": 2731.07, "wechat": 1568.47, "other": 0, "meituan": 994.9, "douyin": 167.7, "totalPay": 151, "app": 75, "mt": 56, "dy": 20, "newC": 117, "oldC": 27, "rep": 17.88 },
+        { "cat": "KTV", "freq": 531, "price": 110.22, "revenue": 58527.15, "wechat": 28921.05, "other": 500, "meituan": 21522.4, "douyin": 7583.7, "totalPay": 458, "app": 179, "mt": 188, "dy": 91, "newC": 389, "oldC": 54, "rep": 11.79 },
+        { "cat": "棋牌", "freq": 110, "price": 59.25, "revenue": 6517.6, "wechat": 5716.6, "other": 0, "meituan": 801, "douyin": 0, "totalPay": 58, "app": 48, "mt": 10, "dy": 0, "newC": 34, "oldC": 24, "rep": 41.38 }
+      ],
+      "total": { "freq": 826, "price": 82.05, "revenue": 67775.82, "wechat": 36206.12, "other": 500, "meituan": 23318.3, "douyin": 7751.4, "totalPay": 667, "app": 302, "mt": 254, "dy": 111, "newC": 540, "oldC": 105, "rep": 15.74 }
+    },
+    "1月": {
+      "rows": [
+        { "cat": "台球", "freq": 175, "price": 16.52, "revenue": 2891.8, "wechat": 1669.5, "other": 0, "meituan": 1015.9, "douyin": 206.4, "totalPay": 127, "app": 78, "mt": 49, "dy": 16, "newC": 101, "oldC": 26, "rep": 20.47 },
+        { "cat": "KTV", "freq": 485, "price": 107.94, "revenue": 52351.89, "wechat": 27837.15, "other": 329, "meituan": 18087.8, "douyin": 6097.94, "totalPay": 440, "app": 231, "mt": 146, "dy": 63, "newC": 353, "oldC": 87, "rep": 19.77 },
+        { "cat": "棋牌", "freq": 122, "price": 60.02, "revenue": 7322.5, "wechat": 5637.2, "other": 99, "meituan": 1586.3, "douyin": 0, "totalPay": 81, "app": 59, "mt": 22, "dy": 0, "newC": 51, "oldC": 30, "rep": 37.04 }
+      ],
+      "total": { "freq": 782, "price": 80.01, "revenue": 62566.19, "wechat": 35143.85, "other": 428, "meituan": 20690, "douyin": 6304.34, "totalPay": 648, "app": 368, "mt": 217, "dy": 79, "newC": 505, "oldC": 143, "rep": 22.07 }
+    },
+    "2月": {
+      "rows": [
+        { "cat": "台球", "freq": 113, "price": 16.3, "revenue": 1841.5, "wechat": 922.2, "other": 0, "meituan": 790.3, "douyin": 129, "totalPay": 106, "app": 55, "mt": 41, "dy": 10, "newC": 94, "oldC": 12, "rep": 11.32 },
+        { "cat": "KTV", "freq": 269, "price": 144.97, "revenue": 38996.49, "wechat": 16514.19, "other": 279, "meituan": 16626.6, "douyin": 5576.7, "totalPay": 259, "app": 111, "mt": 106, "dy": 42, "newC": 208, "oldC": 51, "rep": 19.69 },
+        { "cat": "棋牌", "freq": 76, "price": 64.14, "revenue": 4874.26, "wechat": 2361.06, "other": 68, "meituan": 2445.2, "douyin": 0, "totalPay": 63, "app": 37, "mt": 26, "dy": 0, "newC": 47, "oldC": 16, "rep": 25.4 }
+      ],
+      "total": { "freq": 458, "price": 99.81, "revenue": 45712.25, "wechat": 19797.45, "other": 347, "meituan": 19862.1, "douyin": 5705.7, "totalPay": 428, "app": 203, "mt": 173, "dy": 52, "newC": 349, "oldC": 79, "rep": 22.64 }
+    },
+    "3月": {
+      "rows": [
+        { "cat": "台球", "freq": 190, "price": 17.8, "revenue": 3382.6, "wechat": 2067, "other": 0, "meituan": 1099.3, "douyin": 216.3, "totalPay": 142, "app": 78, "mt": 47, "dy": 17, "newC": 123, "oldC": 19, "rep": 13.38 },
+        { "cat": "KTV", "freq": 402, "price": 124.44, "revenue": 50024.7, "wechat": 23899, "other": 1051, "meituan": 16865, "douyin": 8209.7, "totalPay": 376, "app": 167, "mt": 131, "dy": 78, "newC": 320, "oldC": 56, "rep": 14.89 },
+        { "cat": "棋牌", "freq": 146, "price": 56.45, "revenue": 8241.1, "wechat": 6201.6, "other": 390, "meituan": 1649.5, "douyin": 0, "totalPay": 82, "app": 66, "mt": 16, "dy": 0, "newC": 53, "oldC": 29, "rep": 35.37 }
+      ],
+      "total": { "freq": 738, "price": 83.53, "revenue": 61648.4, "wechat": 32167.6, "other": 1441, "meituan": 19613.8, "douyin": 8426, "totalPay": 600, "app": 311, "mt": 194, "dy": 95, "newC": 496, "oldC": 104, "rep": 17.33 }
+    },
+    "4月": {
+      "rows": [
+        { "cat": "台球", "freq": 167, "price": 21.56, "revenue": 2910.6, "wechat": 1653.6, "other": 0, "meituan": 1050.6, "douyin": 206.4, "totalPay": 135, "app": 67, "mt": 52, "dy": 16, "newC": 117, "oldC": 18, "rep": 13.33 },
+        { "cat": "KTV", "freq": 460, "price": 123.00, "revenue": 55228.26, "wechat": 25556.26, "other": 288, "meituan": 20289, "douyin": 9095, "totalPay": 449, "app": 196, "mt": 158, "dy": 95, "newC": 371, "oldC": 78, "rep": 17.37 },
+        { "cat": "棋牌", "freq": 151, "price": 91.86, "revenue": 6705.5, "wechat": 5419.3, "other": 58, "meituan": 1228.2, "douyin": 0, "totalPay": 73, "app": 55, "mt": 18, "dy": 0, "newC": 33, "oldC": 40, "rep": 54.79 }
+      ],
+      "total": { "freq": 778, "price": 98.70, "revenue": 64844.36, "wechat": 32629.16, "other": 346, "meituan": 22567.8, "douyin": 9301.4, "totalPay": 657, "app": 318, "mt": 228, "dy": 111, "newC": 521, "oldC": 136, "rep": 20.70 }
+    }
+  }
+};
+
+// ===================== 状态变量 =====================
+let allData = {};
+let monthOrder = [];
+let curMonth = "";
+let selectedCompare = new Set();
+
+// 图表实例
+let channelPieChart = null, bizPieChart = null, freqChart = null, newOldChart = null;
+let trendRevChart = null, trendPayChart = null, trendFreqChart = null, trendRepChart = null;
+
+const bizNames = ["台球", "KTV", "棋牌"];
+const bizColors = { "台球": "#276749", "KTV": "#c05621", "棋牌": "#6b46c1" };
+
+// ===================== 工具函数 =====================
+function fmt(n) { return n.toLocaleString('zh-CN', {maximumFractionDigits:2}); }
+function fmtYuan(n) { return '¥' + n.toLocaleString('zh-CN', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.className = 'success-toast';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2000);
+}
+
+// ===================== 数据保存/加载 =====================
+function saveToLocalStorage() {
+  const data = { months: monthOrder, data: allData };
+  localStorage.setItem('duohuanju_data', JSON.stringify(data));
+}
+
+function loadFromLocalStorage() {
+  const saved = localStorage.getItem('duohuanju_data');
+  if (saved) {
+    try {
+      return JSON.parse(saved);
+    } catch(e) {
+      return null;
+    }
+  }
+  return null;
+}
+
+// ===================== 模态框 =====================
+function showModal(id) { document.getElementById(id).classList.add('show'); }
+function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+// ===================== 月份管理 =====================
+function showAddMonthModal() {
+  document.getElementById('newMonthName').value = '';
+  showModal('addMonthModal');
+}
+
+function addMonth() {
+  const name = document.getElementById('newMonthName').value.trim();
+  if (!name) { alert('请输入月份名称'); return; }
+  if (allData[name]) { alert('该月份已存在'); return; }
+
+  // 读取台球数据
+  const tqFreq = parseInt(document.getElementById('addTqFreq').value) || 0;
+  const tqWechat = parseFloat(document.getElementById('addTqWechat').value) || 0;
+  const tqMeituan = parseFloat(document.getElementById('addTqMeituan').value) || 0;
+  const tqDouyin = parseFloat(document.getElementById('addTqDouyin').value) || 0;
+  const tqOther = parseFloat(document.getElementById('addTqOther').value) || 0;
+  const tqApp = parseInt(document.getElementById('addTqApp').value) || 0;
+  const tqMt = parseInt(document.getElementById('addTqMt').value) || 0;
+  const tqDy = parseInt(document.getElementById('addTqDy').value) || 0;
+  const tqNewC = parseInt(document.getElementById('addTqNewC').value) || 0;
+  const tqTotalPay = tqApp + tqMt + tqDy;
+  const tqOldC = tqTotalPay - tqNewC;
+  const tqRevenue = tqWechat + tqMeituan + tqDouyin + tqOther;
+  const tqPrice = tqTotalPay > 0 ? tqRevenue / tqTotalPay : 0;
+  const tqRep = tqTotalPay > 0 ? (tqOldC / tqTotalPay * 100) : 0;
+
+  // 读取KTV数据
+  const ktvFreq = parseInt(document.getElementById('addKtvFreq').value) || 0;
+  const ktvWechat = parseFloat(document.getElementById('addKtvWechat').value) || 0;
+  const ktvMeituan = parseFloat(document.getElementById('addKtvMeituan').value) || 0;
+  const ktvDouyin = parseFloat(document.getElementById('addKtvDouyin').value) || 0;
+  const ktvOther = parseFloat(document.getElementById('addKtvOther').value) || 0;
+  const ktvApp = parseInt(document.getElementById('addKtvApp').value) || 0;
+  const ktvMt = parseInt(document.getElementById('addKtvMt').value) || 0;
+  const ktvDy = parseInt(document.getElementById('addKtvDy').value) || 0;
+  const ktvNewC = parseInt(document.getElementById('addKtvNewC').value) || 0;
+  const ktvTotalPay = ktvApp + ktvMt + ktvDy;
+  const ktvOldC = ktvTotalPay - ktvNewC;
+  const ktvRevenue = ktvWechat + ktvMeituan + ktvDouyin + ktvOther;
+  const ktvPrice = ktvTotalPay > 0 ? ktvRevenue / ktvTotalPay : 0;
+  const ktvRep = ktvTotalPay > 0 ? (ktvOldC / ktvTotalPay * 100) : 0;
+
+  // 读取棋牌数据
+  const qpFreq = parseInt(document.getElementById('addQpFreq').value) || 0;
+  const qpWechat = parseFloat(document.getElementById('addQpWechat').value) || 0;
+  const qpMeituan = parseFloat(document.getElementById('addQpMeituan').value) || 0;
+  const qpDouyin = parseFloat(document.getElementById('addQpDouyin').value) || 0;
+  const qpOther = parseFloat(document.getElementById('addQpOther').value) || 0;
+  const qpApp = parseInt(document.getElementById('addQpApp').value) || 0;
+  const qpMt = parseInt(document.getElementById('addQpMt').value) || 0;
+  const qpDy = parseInt(document.getElementById('addQpDy').value) || 0;
+  const qpNewC = parseInt(document.getElementById('addQpNewC').value) || 0;
+  const qpTotalPay = qpApp + qpMt + qpDy;
+  const qpOldC = qpTotalPay - qpNewC;
+  const qpRevenue = qpWechat + qpMeituan + qpDouyin + qpOther;
+  const qpPrice = qpTotalPay > 0 ? qpRevenue / qpTotalPay : 0;
+  const qpRep = qpTotalPay > 0 ? (qpOldC / qpTotalPay * 100) : 0;
+
+  // 计算总计
+  const totalFreq = tqFreq + ktvFreq + qpFreq;
+  const totalWechat = tqWechat + ktvWechat + qpWechat;
+  const totalMeituan = tqMeituan + ktvMeituan + qpMeituan;
+  const totalDouyin = tqDouyin + ktvDouyin + qpDouyin;
+  const totalOther = tqOther + ktvOther + qpOther;
+  const totalRevenue = tqRevenue + ktvRevenue + qpRevenue;
+  const totalApp = tqApp + ktvApp + qpApp;
+  const totalMt = tqMt + ktvMt + qpMt;
+  const totalDy = tqDy + ktvDy + qpDy;
+  const totalPay = tqTotalPay + ktvTotalPay + qpTotalPay;
+  const totalNewC = tqNewC + ktvNewC + qpNewC;
+  const totalOldC = tqOldC + ktvOldC + qpOldC;
+  const totalRep = totalPay > 0 ? (totalOldC / totalPay * 100) : 0;
+  const totalPrice = totalPay > 0 ? totalRevenue / totalPay : 0;
+
+  // 创建新月份数据
+  allData[name] = {
+    rows: [
+      { cat: "台球", freq: tqFreq, price: tqPrice, revenue: tqRevenue, wechat: tqWechat, other: tqOther, meituan: tqMeituan, douyin: tqDouyin, totalPay: tqTotalPay, app: tqApp, mt: tqMt, dy: tqDy, newC: tqNewC, oldC: tqOldC, rep: tqRep },
+      { cat: "KTV", freq: ktvFreq, price: ktvPrice, revenue: ktvRevenue, wechat: ktvWechat, other: ktvOther, meituan: ktvMeituan, douyin: ktvDouyin, totalPay: ktvTotalPay, app: ktvApp, mt: ktvMt, dy: ktvDy, newC: ktvNewC, oldC: ktvOldC, rep: ktvRep },
+      { cat: "棋牌", freq: qpFreq, price: qpPrice, revenue: qpRevenue, wechat: qpWechat, other: qpOther, meituan: qpMeituan, douyin: qpDouyin, totalPay: qpTotalPay, app: qpApp, mt: qpMt, dy: qpDy, newC: qpNewC, oldC: qpOldC, rep: qpRep }
+    ],
+    total: { freq: totalFreq, price: totalPrice, revenue: totalRevenue, wechat: totalWechat, other: totalOther, meituan: totalMeituan, douyin: totalDouyin, totalPay: totalPay, app: totalApp, mt: totalMt, dy: totalDy, newC: totalNewC, oldC: totalOldC, rep: totalRep }
+  };
+
+  monthOrder.push(name);
+  saveToLocalStorage();
+  rebuildMonthButtons();
+  rebuildCompareSelector();
+  curMonth = name;
+  document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
+  document.querySelector(`[data-month="${name}"]`)?.classList.add('active');
+  render();
+  closeModal('addMonthModal');
+  showToast('月份添加成功');
+}
+
+function showRenameMonthModal(month) {
+  document.getElementById('renameMonthOld').value = month;
+  document.getElementById('renameMonthNew').value = month;
+  showModal('renameMonthModal');
+}
+
+function saveMonthRename() {
+  const oldName = document.getElementById('renameMonthOld').value;
+  const newName = document.getElementById('renameMonthNew').value.trim();
+  if (!newName) { alert('请输入新名称'); return; }
+  if (newName !== oldName && allData[newName]) { alert('该月份已存在'); return; }
+  
+  // 更新数据
+  allData[newName] = allData[oldName];
+  delete allData[oldName];
+  monthOrder = monthOrder.map(m => m === oldName ? newName : m);
+  
+  if (curMonth === oldName) curMonth = newName;
+  selectedCompare.delete(oldName);
+  selectedCompare.add(newName);
+  
+  saveToLocalStorage();
+  rebuildMonthButtons();
+  rebuildCompareSelector();
+  render();
+  closeModal('renameMonthModal');
+  showToast('月份已重命名');
+}
+
+function deleteMonth(month) {
+  if (!confirm(`确定要删除 ${month} 的所有数据吗？`)) return;
+  delete allData[month];
+  monthOrder = monthOrder.filter(m => m !== month);
+  selectedCompare.delete(month);
+  
+  if (curMonth === month) {
+    curMonth = monthOrder.length > 0 ? monthOrder[monthOrder.length - 1] : '';
+  }
+  
+  saveToLocalStorage();
+  rebuildMonthButtons();
+  rebuildCompareSelector();
+  render();
+  showToast('月份已删除');
+}
+
+// ===================== 业态编辑 =====================
+function editBiz(month, cat) {
+  const row = allData[month].rows.find(r => r.cat === cat);
+  if (!row) return;
+  
+  document.getElementById('editBizMonth').value = month;
+  document.getElementById('editBizCat').value = cat;
+  document.getElementById('editBizCatName').value = cat;
+  document.getElementById('editFreq').value = row.freq;
+  document.getElementById('editPrice').value = row.price;
+  document.getElementById('editWechat').value = row.wechat;
+  document.getElementById('editMeituan').value = row.meituan;
+  document.getElementById('editDouyin').value = row.douyin;
+  document.getElementById('editOther').value = row.other || 0;
+  document.getElementById('editApp').value = row.app;
+  document.getElementById('editMt').value = row.mt;
+  document.getElementById('editDy').value = row.dy;
+  document.getElementById('editNewC').value = row.newC;
+  
+  showModal('editBizModal');
+}
+
+function saveBizEdit() {
+  const month = document.getElementById('editBizMonth').value;
+  const cat = document.getElementById('editBizCat').value;
+  const row = allData[month].rows.find(r => r.cat === cat);
+  if (!row) return;
+  
+  // 更新数据
+  row.freq = parseInt(document.getElementById('editFreq').value) || 0;
+  row.price = parseFloat(document.getElementById('editPrice').value) || 0;
+  row.wechat = parseFloat(document.getElementById('editWechat').value) || 0;
+  row.meituan = parseFloat(document.getElementById('editMeituan').value) || 0;
+  row.douyin = parseFloat(document.getElementById('editDouyin').value) || 0;
+  row.other = parseFloat(document.getElementById('editOther').value) || 0;
+  row.app = parseInt(document.getElementById('editApp').value) || 0;
+  row.mt = parseInt(document.getElementById('editMt').value) || 0;
+  row.dy = parseInt(document.getElementById('editDy').value) || 0;
+  row.newC = parseInt(document.getElementById('editNewC').value) || 0;
+  
+  // 计算收益 = 微信 + 美团 + 抖音 + 其他
+  row.revenue = row.wechat + row.meituan + row.douyin + row.other;
+  // 计算总人数
+  row.totalPay = row.app + row.mt + row.dy;
+  // 计算老客
+  row.oldC = row.totalPay - row.newC;
+  if (row.oldC < 0) row.oldC = 0;
+  // 计算复购率
+  row.rep = row.totalPay > 0 ? (row.oldC / row.totalPay * 100) : 0;
+  
+  // 重新计算总计
+  recalculateTotal(month);
+  
+  saveToLocalStorage();
+  rebuildCompareSelector();
+  render();
+  closeModal('editBizModal');
+  showToast('数据已保存');
+}
+
+function recalculateTotal(month) {
+  const d = allData[month];
+  const t = d.total;
+  
+  t.freq = d.rows.reduce((sum, r) => sum + r.freq, 0);
+  t.wechat = d.rows.reduce((sum, r) => sum + r.wechat, 0);
+  t.meituan = d.rows.reduce((sum, r) => sum + r.meituan, 0);
+  t.douyin = d.rows.reduce((sum, r) => sum + r.douyin, 0);
+  t.other = d.rows.reduce((sum, r) => sum + (r.other || 0), 0);
+  t.revenue = t.wechat + t.meituan + t.douyin + t.other;
+  t.app = d.rows.reduce((sum, r) => sum + r.app, 0);
+  t.mt = d.rows.reduce((sum, r) => sum + r.mt, 0);
+  t.dy = d.rows.reduce((sum, r) => sum + r.dy, 0);
+  t.totalPay = t.app + t.mt + t.dy;
+  t.newC = d.rows.reduce((sum, r) => sum + r.newC, 0);
+  t.oldC = d.rows.reduce((sum, r) => sum + r.oldC, 0);
+  t.rep = t.totalPay > 0 ? (t.oldC / t.totalPay * 100) : 0;
+  t.price = t.totalPay > 0 ? t.revenue / t.totalPay : 0;
+}
+
+function deleteBiz(month, cat) {
+  if (!confirm(`确定要将 ${month} ${cat} 的数据清零吗？`)) return;
+  
+  const row = allData[month].rows.find(r => r.cat === cat);
+  if (!row) return;
+  
+  // 清零
+  row.freq = 0;
+  row.price = 0;
+  row.revenue = 0;
+  row.wechat = 0;
+  row.meituan = 0;
+  row.douyin = 0;
+  row.other = 0;
+  row.totalPay = 0;
+  row.app = 0;
+  row.mt = 0;
+  row.dy = 0;
+  row.newC = 0;
+  row.oldC = 0;
+  row.rep = 0;
+  
+  recalculateTotal(month);
+  saveToLocalStorage();
+  rebuildCompareSelector();
+  render();
+  showToast('数据已清零');
+}
+
+// ===================== 导入导出 =====================
+function exportData() {
+  const data = { months: monthOrder, data: allData };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '多欢聚数据.json';
+  a.click();
+  showToast('数据已导出');
+}
+
+function importData() {
+  document.getElementById('importFile').click();
+}
+
+function handleImport(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (data.months && data.data) {
+        monthOrder = data.months;
+        allData = data.data;
+        curMonth = monthOrder.length > 0 ? monthOrder[monthOrder.length - 1] : '';
+        selectedCompare = new Set(monthOrder.slice(-3));
+        saveToLocalStorage();
+        rebuildMonthButtons();
+        rebuildCompareSelector();
+        render();
+        showToast('数据导入成功');
+      } else {
+        alert('数据格式不正确');
+      }
+    } catch(e) {
+      alert('导入失败：' + e.message);
+    }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+function resetData() {
+  if (!confirm('确定要重置所有数据吗？这将清空所有修改并恢复默认数据。')) return;
+  localStorage.removeItem('duohuanju_data');
+  allData = JSON.parse(JSON.stringify(defaultData.data));
+  monthOrder = [...defaultData.months];
+  curMonth = monthOrder[monthOrder.length - 1];
+  selectedCompare = new Set(monthOrder.slice(-3));
+  rebuildMonthButtons();
+  rebuildCompareSelector();
+  render();
+  showToast('数据已重置');
+}
+
+// ===================== 月份按钮 =====================
+function rebuildMonthButtons() {
+  const container = document.getElementById('monthBtns');
+  container.innerHTML = '';
+  
+  monthOrder.forEach((m) => {
+    const wrap = document.createElement('div');
+    wrap.className = 'month-btn-wrap';
+    
+    const btn = document.createElement('button');
+    btn.className = 'month-btn' + (m === curMonth ? ' active' : '');
+    btn.dataset.month = m;
+    btn.textContent = m;
+    
+    btn.onclick = () => {
+      document.querySelectorAll('.month-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      curMonth = m;
+      render();
+    };
+    
+    const menu = document.createElement('div');
+    menu.className = 'month-menu';
+    menu.innerHTML = `
+      <button onclick="showRenameMonthModal('${m}')">重命名</button>
+      <button onclick="deleteMonth('${m}')" class="danger">删除月份</button>
+    `;
+    
+    wrap.appendChild(btn);
+    wrap.appendChild(menu);
+    container.appendChild(wrap);
+  });
+}
+
+function rebuildCompareSelector() {
+  const container = document.getElementById('compareSelector');
+  container.innerHTML = '';
+  
+  monthOrder.forEach(m => {
+    const id = 'cmp_' + m.replace(/[^a-zA-Z0-9]/g, '');
+    const wrap = document.createElement('div');
+    wrap.className = 'compare-chk';
+    wrap.innerHTML = `<input type="checkbox" id="${id}" ${selectedCompare.has(m) ? 'checked' : ''} /><label for="${id}">${m}</label>`;
+    wrap.querySelector('input').onchange = () => {
+      if (selectedCompare.has(m)) selectedCompare.delete(m);
+      else selectedCompare.add(m);
+      renderTrendCharts();
+    };
+    container.appendChild(wrap);
+  });
+}
+
+// ===================== 渲染 =====================
+function calcChange(cur, prev) {
+  if (!prev || prev === 0) return null;
+  return ((cur - prev) / prev * 100);
+}
+function changeTag(pct) {
+  if (pct === null) return '';
+  if (Math.abs(pct) < 0.05) return `<span class="kpi-change flat">— 持平</span>`;
+  if (pct > 0) return `<span class="kpi-change up">▲ ${pct.toFixed(1)}%</span>`;
+  return `<span class="kpi-change down">▼ ${Math.abs(pct).toFixed(1)}%</span>`;
+}
+
+function render() {
+  if (!curMonth || !allData[curMonth]) return;
+  const d = allData[curMonth];
+  const t = d.total;
+
+  // 上一个月数据
+  const curIdx = monthOrder.indexOf(curMonth);
+  const prevMonth = curIdx > 0 ? monthOrder[curIdx - 1] : null;
+  const pt = prevMonth && allData[prevMonth] ? allData[prevMonth].total : null;
+
+  // KPI
+  document.getElementById('kpiRow').innerHTML = `
+    <div class="kpi-card">
+      <div class="kpi-label">当月总收益</div>
+      <div class="kpi-value">${fmtYuan(t.revenue)}</div>
+      ${changeTag(calcChange(t.revenue, pt?.revenue))}
+      <div class="kpi-sub">
+        台球 <span>¥${fmt(d.rows[0].revenue)}</span> 
+        KTV <span>¥${fmt(d.rows[1].revenue)}</span> 
+        棋牌 <span>¥${fmt(d.rows[2].revenue)}</span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">支付人数</div>
+      <div class="kpi-value">${t.totalPay.toLocaleString()}<span class="kpi-unit">人</span></div>
+      ${changeTag(calcChange(t.totalPay, pt?.totalPay))}
+      <div class="kpi-sub">
+        小程序 <span>${t.app}人</span> 
+        美团 <span>${t.mt}人</span> 
+        抖音 <span>${t.dy}人</span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">使用频次</div>
+      <div class="kpi-value">${t.freq.toLocaleString()}<span class="kpi-unit">次</span></div>
+      ${changeTag(calcChange(t.freq, pt?.freq))}
+      <div class="kpi-sub">
+        台球 <span>${d.rows[0].freq}次</span> 
+        KTV <span>${d.rows[1].freq}次</span> 
+        棋牌 <span>${d.rows[2].freq}次</span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">新客 / 老客</div>
+      <div class="kpi-value">${t.newC}<span class="kpi-unit">/</span>${t.oldC}</div>
+      ${changeTag(calcChange(t.newC, pt?.newC))}
+      <div class="kpi-sub">
+        复购率 <span style="color:#2c5282">${t.rep.toFixed(1)}%</span> 
+        均价 <span>¥${t.price.toFixed(2)}</span>
+      </div>
+    </div>
+  `;
+
+  // 业态卡片
+  document.getElementById('bizCards').innerHTML = d.rows.map((r, i) => `
+    <div class="biz-card">
+      <div class="biz-header">
+        <div class="biz-icon ${r.cat === '台球' ? 'billiard' : r.cat === 'KTV' ? 'ktv' : 'chess'}">${r.cat === '台球' ? 'T' : r.cat === 'KTV' ? 'K' : 'Q'}</div>
+        <div class="biz-name">${r.cat}</div>
+      </div>
+      <div class="biz-revenue">${fmtYuan(r.revenue)}</div>
+      <div class="biz-row"><span class="key">使用频次</span><span class="val">${r.freq} 次</span></div>
+      <div class="biz-row"><span class="key">支付人数</span><span class="val">${r.totalPay} 人</span></div>
+      <div class="biz-row"><span class="key">人均单价</span><span class="val">${fmtYuan(r.price)}</span></div>
+      <div class="biz-row"><span class="key">新客 / 老客</span><span class="val">${r.newC} / ${r.oldC}</span></div>
+      <div class="biz-row"><span class="key">复购率</span><span class="val" style="color:${r.rep > 20 ? '#2c5282' : '#276749'}">${r.rep.toFixed(1)}%</span></div>
+    </div>
+  `).join('');
+
+  // 渠道条
+  const channels = [
+    { name:"微信", val:t.wechat, color:"#3182ce" },
+    { name:"美团", val:t.meituan, color:"#dd6b20" },
+    { name:"抖音", val:t.douyin, color:"#e53e3e" },
+    { name:"其他", val:t.other || 0, color:"#38a169" },
+  ];
+  const max = Math.max(...channels.map(c=>c.val));
+  const total = channels.reduce((s,c) => s + c.val, 0);
+  document.getElementById('channelBars').innerHTML = channels.map(c => `
+    <div class="ch-row">
+      <div class="ch-label">${c.name}</div>
+      <div class="ch-track"><div class="ch-fill" style="width:${max>0?(c.val/max*100).toFixed(1):0}%;background:${c.color}"></div></div>
+      <div class="ch-val">${fmtYuan(c.val)}<span class="ch-pct">${total>0?'('+(c.val/total*100).toFixed(1)+'%)':''}</span></div>
+    </div>
+  `).join('');
+
+  // 表格
+  const tagMap = { "台球":"tag-billiard", "KTV":"tag-ktv", "棋牌":"tag-chess" };
+  document.getElementById('tableBody').innerHTML = d.rows.map(r => `
+    <tr>
+      <td><span class="tag ${tagMap[r.cat]}">${r.cat}</span></td>
+      <td class="num">${r.freq}</td>
+      <td class="num">${fmtYuan(r.price)}</td>
+      <td class="num">${fmtYuan(r.revenue)}</td>
+      <td class="num">${fmtYuan(r.wechat)}</td>
+      <td class="num">${fmtYuan(r.meituan)}</td>
+      <td class="num">${fmtYuan(r.douyin)}</td>
+      <td class="num">${r.totalPay}</td>
+      <td class="num">${r.newC}</td>
+      <td class="num">${r.oldC}</td>
+      <td class="num">${r.rep.toFixed(1)}%</td>
+    </tr>
+  `).join('');
+
+  renderCharts(d, t);
+  renderTrendCharts();
+}
+
+function renderCharts(d, t) {
+  const datalabels = {
+    datalabels: {
+      color: '#fff',
+      font: { size: 11, weight: 'bold' },
+      formatter: function(value, context) {
+        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+        const pct = ((value / total) * 100).toFixed(1);
+        return value > 0 ? pct + '%' : '';
+      },
+      anchor: 'center',
+      align: 'center'
+    }
+  };
+  
+  const opts = { 
+    responsive:true, 
+    plugins:{ 
+      legend:{ labels:{ color:'#4a5568', usePointStyle:true, padding:12, font:{ size:12 } } }, 
+      tooltip:{ backgroundColor:'#fff', titleColor:'#1a202c', bodyColor:'#4a5568', borderColor:'#e2e8f0', borderWidth:1, padding:10, cornerRadius:6 },
+      datalabels: { display: false }
+    } 
+  };
+  
+  const pieOpts = { ...opts, cutout:'55%', plugins: { ...opts.plugins, datalabels: datalabels.datalabels } };
+  
+  const barDatalabels = {
+    datalabels: {
+      color: '#2d3748',
+      font: { size: 10, weight: 'bold' },
+      anchor: 'end',
+      align: 'top',
+      formatter: function(value) { return value > 0 ? value : ''; }
+    }
+  };
+  
+  const gridOpts = { ...opts, plugins:{ ...opts.plugins, legend:{ display:false }, datalabels: barDatalabels.datalabels }, scales:{ x:{ grid:{ display:false }, ticks:{ color:'#718096', font:{ size:11 } } }, y:{ grid:{ color:'#f0f0f0' }, ticks:{ color:'#718096', font:{ size:10 } } } } };
+
+  if (channelPieChart) channelPieChart.destroy();
+  channelPieChart = new Chart(document.getElementById('channelPie'), {
+    type:'doughnut', data:{ labels:['微信','美团','抖音','其他'], datasets:[{ data:[t.wechat,t.meituan,t.douyin,t.other||0], backgroundColor:['#3182ce','#dd6b20','#e53e3e','#38a169'], borderWidth:2, borderColor:'#fff' }] }, options:pieOpts
+  });
+
+  if (bizPieChart) bizPieChart.destroy();
+  bizPieChart = new Chart(document.getElementById('bizPie'), {
+    type:'doughnut', data:{ labels:['KTV','台球','棋牌'], datasets:[{ data:[d.rows[1].revenue,d.rows[0].revenue,d.rows[2].revenue], backgroundColor:['#dd6b20','#276749','#6b46c1'], borderWidth:2, borderColor:'#fff' }] }, options:pieOpts
+  });
+
+  if (freqChart) freqChart.destroy();
+  freqChart = new Chart(document.getElementById('freqChart'), {
+    type:'bar', data:{ labels:['台球','KTV','棋牌'], datasets:[{ data:[d.rows[0].freq,d.rows[1].freq,d.rows[2].freq], backgroundColor:['#276749','#dd6b20','#6b46c1'], borderRadius:4, borderSkipped:false }] }, options:gridOpts
+  });
+
+  if (newOldChart) newOldChart.destroy();
+  newOldChart = new Chart(document.getElementById('newOldChart'), {
+    type:'bar', data:{ labels:['台球','KTV','棋牌'], datasets:[{ label:'新客', data:[d.rows[0].newC,d.rows[1].newC,d.rows[2].newC], backgroundColor:'#3182ce', borderRadius:4, borderSkipped:false }, { label:'老客', data:[d.rows[0].oldC,d.rows[1].oldC,d.rows[2].oldC], backgroundColor:'#38a169', borderRadius:4, borderSkipped:false }] }, options:{ ...gridOpts, plugins:{ ...gridOpts.plugins, legend:{ display:true, labels:{ color:'#4a5568', usePointStyle:true, padding:10, font:{ size:11 } } } } }
+  });
+}
+
+function renderTrendCharts() {
+  const sel = Array.from(selectedCompare);
+  if (sel.length === 0) return;
+  
+  const lineDatalabels = {
+    datalabels: {
+      color: '#1a202c',
+      font: { size: 10, weight: 'bold' },
+      anchor: 'top',
+      align: 'top',
+      offset: 8,
+      formatter: function(value, context) {
+        const chartId = context.chart.canvas.id;
+        if (chartId === 'trendRevChart') return '¥' + value.toLocaleString();
+        if (chartId === 'trendPayChart') return value + '人';
+        if (chartId === 'trendRepChart') return value.toFixed(1) + '%';
+        return value;
+      }
+    }
+  };
+  
+  const baseOpts = { 
+    responsive:true, 
+    plugins:{ 
+      legend:{ labels:{ color:'#4a5568', usePointStyle:true, padding:10, font:{ size:11 } } }, 
+      tooltip:{ backgroundColor:'#fff', titleColor:'#1a202c', bodyColor:'#4a5568', borderColor:'#e2e8f0', borderWidth:1, padding:10, cornerRadius:6 },
+      datalabels: lineDatalabels.datalabels
+    }, 
+    scales:{ x:{ grid:{ display:false }, ticks:{ color:'#718096', font:{ size:11, weight:'500' } } }, y:{ grid:{ color:'#f0f0f0' }, ticks:{ color:'#718096', font:{ size:10 } } } } 
+  };
+
+  if (trendRevChart) trendRevChart.destroy();
+  trendRevChart = new Chart(document.getElementById('trendRevChart'), {
+    type:'line', 
+    data:{ 
+      labels:sel, 
+      datasets:[{ 
+        data:sel.map(m=>allData[m].total.revenue), 
+        borderColor:'#2c5282', 
+        backgroundColor:'rgba(44,82,130,0.1)', 
+        fill:true, 
+        tension:0.3, 
+        pointRadius:6, 
+        pointBackgroundColor:'#2c5282',
+        pointBorderColor:'#fff',
+        pointBorderWidth:2,
+        borderWidth:2.5
+      }] 
+    }, 
+    options:{ 
+      ...baseOpts, 
+      plugins:{ ...baseOpts.plugins, legend:{ display:false } }, 
+      scales:{ ...baseOpts.scales, y:{ ...baseOpts.scales.y, ticks:{ ...baseOpts.scales.y.ticks, callback:v=>'¥'+(v/10000).toFixed(1)+'万' } } } 
+    }
+  });
+
+  if (trendPayChart) trendPayChart.destroy();
+  trendPayChart = new Chart(document.getElementById('trendPayChart'), {
+    type:'line', 
+    data:{ 
+      labels:sel, 
+      datasets:[{ 
+        data:sel.map(m=>allData[m].total.totalPay), 
+        borderColor:'#dd6b20', 
+        backgroundColor:'rgba(221,107,32,0.1)', 
+        fill:true, 
+        tension:0.3, 
+        pointRadius:6, 
+        pointBackgroundColor:'#dd6b20',
+        pointBorderColor:'#fff',
+        pointBorderWidth:2,
+        borderWidth:2.5
+      }] 
+    }, 
+    options:{ ...baseOpts, plugins:{ ...baseOpts.plugins, legend:{ display:false } } }
+  });
+
+  if (trendFreqChart) trendFreqChart.destroy();
+  trendFreqChart = new Chart(document.getElementById('trendFreqChart'), {
+    type:'line', 
+    data:{ 
+      labels:sel, 
+      datasets:[
+        { label:'台球', data:sel.map(m=>allData[m].rows[0]?.freq||0), borderColor:'#276749', backgroundColor:'rgba(39,103,73,0.1)', fill:false, tension:0.3, pointRadius:5, pointBackgroundColor:'#276749', pointBorderColor:'#fff', pointBorderWidth:2, borderWidth:2 },
+        { label:'KTV', data:sel.map(m=>allData[m].rows[1]?.freq||0), borderColor:'#dd6b20', backgroundColor:'rgba(221,107,32,0.1)', fill:false, tension:0.3, pointRadius:5, pointBackgroundColor:'#dd6b20', pointBorderColor:'#fff', pointBorderWidth:2, borderWidth:2 },
+        { label:'棋牌', data:sel.map(m=>allData[m].rows[2]?.freq||0), borderColor:'#6b46c1', backgroundColor:'rgba(107,70,193,0.1)', fill:false, tension:0.3, pointRadius:5, pointBackgroundColor:'#6b46c1', pointBorderColor:'#fff', pointBorderWidth:2, borderWidth:2 }
+      ] 
+    }, 
+    options:{ ...baseOpts, plugins:{ ...baseOpts.plugins, legend:{ labels:{ color:'#4a5568', usePointStyle:true, padding:10, font:{ size:11 } } } } }
+  });
+
+  if (trendRepChart) trendRepChart.destroy();
+  trendRepChart = new Chart(document.getElementById('trendRepChart'), {
+    type:'line', 
+    data:{ 
+      labels:sel, 
+      datasets:[{ 
+        data:sel.map(m=>allData[m].total.rep), 
+        borderColor:'#805ad5', 
+        backgroundColor:'rgba(128,90,213,0.1)', 
+        fill:true, 
+        tension:0.3, 
+        pointRadius:6, 
+        pointBackgroundColor:'#805ad5',
+        pointBorderColor:'#fff',
+        pointBorderWidth:2,
+        borderWidth:2.5
+      }] 
+    }, 
+    options:{ 
+      ...baseOpts, 
+      plugins:{ ...baseOpts.plugins, legend:{ display:false } }, 
+      scales:{ ...baseOpts.scales, y:{ ...baseOpts.scales.y, ticks:{ ...baseOpts.scales.y.ticks, callback:v=>v+'%' } } } 
+    }
+  });
+}
+
+// ===================== 初始化 =====================
+function init() {
+  // 优先从 localStorage 加载
+  const saved = loadFromLocalStorage();
+  if (saved && saved.months && saved.data) {
+    allData = saved.data;
+    monthOrder = saved.months;
+  } else {
+    // 使用默认内嵌数据
+    allData = JSON.parse(JSON.stringify(defaultData.data));
+    monthOrder = [...defaultData.months];
+  }
+  
+  curMonth = monthOrder.length > 0 ? monthOrder[monthOrder.length - 1] : '';
+  selectedCompare = new Set(monthOrder.slice(-3));
+  
+  rebuildMonthButtons();
+  rebuildCompareSelector();
+  render();
+}
+
+init();
+</script>
+</body>
+</html>
